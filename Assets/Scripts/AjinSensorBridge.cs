@@ -11,7 +11,7 @@ public class AjinSensorBridge : MonoBehaviour
     // OpticalSensor의 OnDetected() 이벤트에 이 함수를 연결하세요.
     public void OnSensorDetected()
     {
-        /*if (AjinextekManager.Instance == null) return;
+        if (AjinextekManager.Instance == null) return;
 
         if (sensorType == SensorType.PositiveLimit ||
             sensorType == SensorType.NegativeLimit)
@@ -19,7 +19,7 @@ public class AjinSensorBridge : MonoBehaviour
             // 1. 리밋 센서인 경우: 즉시 모터 급정지 명령
             CAXM.AxmMoveEStop(axisNo);
             Debug.Log($"<color=red>[Limit Hit]</color> 축 {axisNo} 리밋 감지: 급정지 호출");
-        }*/
+        }
         /*else if (sensorType == SensorType.Home)
         {
             // 2. 홈 센서인 경우: 현재 위치를 0으로 선언 (원점 잡기)

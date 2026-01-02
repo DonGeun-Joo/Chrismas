@@ -27,6 +27,7 @@ public class MainControlSystem : MonoBehaviour
     {
         // --- [Part 1: 푸셔 제어 로직] ---
         // 공급단에 Can이 감지되면 푸셔 전진
+
         if (supplyCanSensor != null && supplyCanSensor.GetDetectedState())
         {
             canPusher.PushCylinder();

@@ -10,7 +10,7 @@ public class ProductSpawner : MonoBehaviour
 
     [Header("설정")]
     public Transform spawnPoint;    // 제품이 생성될 정확한 위치
-    public float spawnInterval = 5f; // 생성 주기 (5초)
+    public float spawnInterval = 1f; // 생성 주기 (5초)
 
     void Start()
     {

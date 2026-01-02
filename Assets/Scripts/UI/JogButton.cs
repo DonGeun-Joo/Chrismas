@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems; // 마우스 클릭/터치 이벤트를 위해 필수
 
@@ -10,9 +11,17 @@ public class JogButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public double accel = 20000;     // 가속도
     public double decel = 20000;     // 감속도
 
+    [Header("Input Fields (TMP)")]
+    public TMP_InputField inputSpeed;  // 속도
+    public TMP_InputField inputAcc;  // 가속
+    public TMP_InputField inputDec;  // 감속
+
+
     [Header("Direction")]
     [Tooltip("체크하면 (+), 해제하면 (-) 방향으로 이동합니다.")]
     public bool isPositive = true;   // 방향 설정
+
+
 
     // 버튼을 누르는 순간 호출됩니다.
     public void OnPointerDown(PointerEventData eventData)
