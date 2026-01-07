@@ -1,25 +1,21 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.EventSystems;
 
 public class Push_Button : MonoBehaviour
 {
-    [Header("¹öÆ° °¡µ¿ºÎ ¼³Á¤")]
-    [Tooltip("½ÇÁ¦·Î ¾Æ·¡·Î ´­¸± ¹öÆ° ¸Ş½¬¸¦ µå·¡±×ÇÏ¼¼¿ä.")]
+    [Header("ë²„íŠ¼ ê°€ë™ë¶€ ì„¤ì •")]
     public Transform buttonMesh;
-    public float pressDistance = 0.005f; // ´­¸®´Â ±íÀÌ
-    public float pressSpeed = 10f;       // ´­¸®´Â ¼Óµµ
+    public float pressDistance = 0.01f;
+    public float pressSpeed = 20f; // ì¦‰ì‹œ ë°˜ì‘ì„ ìœ„í•´ ì†ë„ë¥¼ ì¡°ê¸ˆ ë†’ì˜€ìŠµë‹ˆë‹¤.
 
-    [Header("ÀÌº¥Æ® (InputAdapter ¿¬µ¿)")]
+    [Header("ì´ë²¤íŠ¸")]
     public UnityEvent OnPressed;
     public UnityEvent OnReleased;
 
     private Vector3 _startPos;
     private Vector3 _targetPos;
     private bool _isPressed = false;
-
     private Material _material;
-
 
     void Start()
     {
@@ -29,7 +25,6 @@ public class Push_Button : MonoBehaviour
             _targetPos = _startPos;
         }
 
-        // ÀÚ±â ÀÚ½ÅÀÇ ·»´õ·¯¿¡¼­ ¸ÓÆ¼¸®¾óÀ» °¡Á®¿É´Ï´Ù.
         var renderer = GetComponent<Renderer>();
         if (renderer != null)
         {
@@ -40,43 +35,39 @@ public class Push_Button : MonoBehaviour
 
     void Update()
     {
-        // ¹öÆ°ÀÇ ºÎµå·¯¿î ¿òÁ÷ÀÓ Ã³¸® (½Ã°¢Àû È¿°ú)
         if (buttonMesh != null)
         {
             buttonMesh.localPosition = Vector3.Lerp(buttonMesh.localPosition, _targetPos, Time.deltaTime * pressSpeed);
         }
     }
 
-    // ¸¶¿ì½º·Î ¹öÆ°À» ´©¸¦ ¶§ (Collider ÇÊ¿ä)
-    private void OnMouseDown()
+    // [í•µì‹¬] ì¡°ì¤€ì´ ë§ê³  í´ë¦­í•˜ëŠ” ìˆœê°„ ì¦‰ì‹œ í˜¸ì¶œ
+    public void StartInteraction()
     {
         if (_isPressed) return;
 
         _isPressed = true;
-        _targetPos = _startPos + (Vector3.down * pressDistance);
-        OnPressed.Invoke(); // PLC_InputAdapter·Î '1' Àü¼Û
+        _targetPos = _startPos + (Vector3.back * pressDistance);
+
+        OnPressed.Invoke();
     }
 
-    // ¸¶¿ì½º¸¦ ¶¿ ¶§
-    private void OnMouseUp()
+    // [í•µì‹¬] ì¡°ì¤€ì´ ë²—ì–´ë‚˜ê±°ë‚˜ ë§ˆìš°ìŠ¤ë¥¼ ë–¼ëŠ” ìˆœê°„ ì¦‰ì‹œ í˜¸ì¶œ
+    public void StopInteraction()
     {
         if (!_isPressed) return;
 
         _isPressed = false;
         _targetPos = _startPos;
-        OnReleased.Invoke(); // PLC_InputAdapter·Î '0' Àü¼Û
-    }
 
-    // ¿ÜºÎ¿¡¼­ ¹öÆ°ÀÇ ÇöÀç ´­¸² »óÅÂ¸¦ È®ÀÎÇÒ ¶§ »ç¿ë
-    public bool IsPressed => _isPressed;
+        OnReleased.Invoke();
+    }
 
     public void SetEmission(bool isOn)
     {
+        //Debug.Log("Emission");
         if (_material == null) return;
-
-        if (isOn)
-            _material.EnableKeyword("_EMISSION");
-        else
-            _material.DisableKeyword("_EMISSION");
+        if (isOn) _material.EnableKeyword("_EMISSION");
+        else _material.DisableKeyword("_EMISSION");
     }
 }

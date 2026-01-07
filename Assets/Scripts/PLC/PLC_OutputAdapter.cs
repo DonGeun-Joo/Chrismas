@@ -5,6 +5,7 @@ public class PLC_OutputAdapter : MonoBehaviour
 {
     [Header("PLC 주소 설정")]
     public string plcAddress; // I/O 리스트의 출력 주소 (예: Y5, YA)
+    public string commant;
 
     [Header("이벤트 설정")]
     [Tooltip("PLC 신호가 ON(1)이 될 때 실행될 함수를 연결하세요.")]
@@ -27,6 +28,7 @@ public class PLC_OutputAdapter : MonoBehaviour
         // MXRequester에 주소 감시 등록
         // IO_Manager가 이미 등록했더라도, 여기서 콜백을 추가로 등록하여 직접 신호를 받습니다.
         MXRequester.Get.AddDeviceAddress(plcAddress.ToUpper(), OnValueChanged);
+        //Debug.Log($"{plcAddress.ToUpper()} : {commant}");
     }
 
     private void OnValueChanged(short value)
@@ -41,10 +43,12 @@ public class PLC_OutputAdapter : MonoBehaviour
         if (_currentState)
         {
             OnActivated.Invoke();
+            //Debug.Log($"{commant} : On");
         }
         else
         {
             OnDeactivated.Invoke();
+            //Debug.Log($"{commant} :Off");
         }
     }
 

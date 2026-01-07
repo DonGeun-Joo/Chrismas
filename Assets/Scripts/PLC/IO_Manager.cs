@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[DefaultExecutionOrder(-100)]
 public class IO_Manager : MonoBehaviour
 {
     private static IO_Manager _instance;
     public static IO_Manager Instance => _instance;
 
     [Header("PLC Slot Settings")]
-    [SerializeField] private int _inputSlotCount = 2;   // 입력 슬롯 수 (예: 2개면 32점)
-    [SerializeField] private int _outputSlotCount = 2;  // 출력 슬롯 수 (예: 2개면 32점)
+    [SerializeField] private int _inputSlotCount = 1;   // 입력 슬롯 수 (예: 2개면 32점)
+    [SerializeField] private int _outputSlotCount = 1;  // 출력 슬롯 수 (예: 2개면 32점)
     [SerializeField] private int _pointsPerSlot = 32;   // 슬롯당 점수 (기본 16점)
 
     // PLC 상태 미러링 (X, Y 주소 통합 관리)
@@ -28,27 +29,19 @@ public class IO_Manager : MonoBehaviour
 
     private void GenerateAndRegisterIO()
     {
-        // 1. 입력 주소(X) 생성 및 등록 (0부터 시작)
+        // 입력 주소 생성 (X0 ~ X3F)
         int totalInputPoints = _inputSlotCount * _pointsPerSlot;
         for (int i = 0; i < totalInputPoints; i++)
         {
-            // 10진수 i를 16진수 문자열로 변환 (예: 16 -> "10")
-            string addr = "X" + i.ToString("X");
-            RegisterAddress(addr);
+            RegisterAddress("X" + i.ToString("X"));
         }
 
-        // 2. 출력 주소(Y) 생성 및 등록 (입력 슬롯이 끝난 지점부터 시작)
-        // 예: 입력 2슬롯(32점)이면 출력은 32(10진수) -> 20(16진수)부터 시작
-        int outputStartOffset = _inputSlotCount * _pointsPerSlot;
+        int offset = totalInputPoints;
         int totalOutputPoints = _outputSlotCount * _pointsPerSlot;
-
         for (int i = 0; i < totalOutputPoints; i++)
         {
-            string addr = "Y" + (outputStartOffset + i).ToString("X");
-            RegisterAddress(addr);
+            RegisterAddress("Y" + (offset + i).ToString("X"));
         }
-
-        Debug.Log($"<color=cyan>IO_Manager: {totalInputPoints} Inputs and {totalOutputPoints} Outputs registered.</color>");
     }
 
     private void RegisterAddress(string addr)

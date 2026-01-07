@@ -2,42 +2,47 @@ using UnityEngine;
 
 public class CylinderController : MonoBehaviour
 {
-    // [¹æ¹ı 1] ÀÎ½ºÆåÅÍ¿¡¼­ ¼¾¼­¸¦ µå·¡±×ÇÏ¿© ÇÒ´ç (ÀÌ°Ç º¸Åë Àß µË´Ï´Ù)
-    public OpticalSensor targetSensor;
+    [Header("PLC ì—°ë™ ì„¤ì •")]
+    public PLC_OutputAdapter plcOutput; // ì‹¤ë¦°ë”ë¥¼ ì›€ì§ì¼ ì¶œë ¥ ì‹ í˜¸ (ì˜ˆ: Y20)
 
-    private Animator animator;
+    [Header("ë¬¼ë¦¬ ì„¤ì •")]
+    public Rigidbody rodRigidbody;      // ì‹¤ë¦°ë” ë¡œë“œì˜ ë¦¬ì§€ë“œë°”ë””
+    public float moveSpeed = 2.0f;      // ì‹¤ë¦°ë” ì´ë™ ì†ë„
+    public Vector3 moveAxis = Vector3.forward; // ì „ì§„ ë°©í–¥ (ë¡œì»¬ ì¶•)
 
-    void Awake()
+    public bool showLog = false;
+
+    void Start()
     {
-        animator = GetComponent<Animator>();
-    }
+        if (plcOutput == null) plcOutput = GetComponent<PLC_OutputAdapter>();
 
-    void OnEnable()
-    {
-        // ¿ÀºêÁ§Æ®°¡ È°¼ºÈ­µÉ ¶§ ±¸µ¶ ½ÃÀÛ
-        if (targetSensor != null)
+        // ë¦¬ì§€ë“œë°”ë”” ì„¤ì • ìµœì í™”
+        if (rodRigidbody != null)
         {
-            // ¼¾¼­ÀÇ OnDetected ÀÌº¥Æ®¿¡ ³» ÇÔ¼ö¸¦ µî·Ï (±¸µ¶)
-            targetSensor.OnDetected.AddListener(PushCylinder);
+            rodRigidbody.useGravity = false;
+            rodRigidbody.isKinematic = false;
+            rodRigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        }
+    }
+    void FixedUpdate()
+    {
+        if (plcOutput == null || rodRigidbody == null) return;
+
+        // 1. PLC ì¶œë ¥ ì‹ í˜¸(Y)ì— ë”°ë¥¸ ë°©í–¥ ê²°ì • (1: ì „ì§„, -1: í›„ì§„)
+        float directionMultiplier = plcOutput.IsOn ? 1f : -1f;
+
+        // 2. Rodì˜ ë¡œì»¬ Xì¶•(1,0,0) ë°©í–¥ì„ ì›”ë“œ ì¢Œí‘œë¡œ ë³€í™˜
+        // í˜„ì¬ ìƒí™©: ì´ ê²°ê³¼ê°’ì´ ì›”ë“œì˜ Zì¶•(0,0,1) ë¶€ê·¼ìœ¼ë¡œ ê³„ì‚°ë©ë‹ˆë‹¤.
+        Vector3 worldDirection = rodRigidbody.transform.rotation * moveAxis.normalized;
+
+        // 3. ë¬¼ë¦¬ ì†ë„ ì ìš© (linearVelocityëŠ” ì›”ë“œ ê¸°ì¤€)
+        // ì´ ì†ë„ëŠ” ì›”ë“œ Zì¶• ë°©í–¥ìœ¼ë¡œ ê°€í•´ì§€ë©°, ë¦¬ì§€ë“œë°”ë””ì˜ Freeze Zê°€ í’€ë ¤ìˆì–´ì•¼ ì›€ì§ì…ë‹ˆë‹¤.
+        rodRigidbody.linearVelocity = worldDirection * directionMultiplier * moveSpeed;
+
+        if (showLog)
+        {
+            Debug.Log($"{plcOutput.plcAddress} | ë¡œì»¬ë°©í–¥:{moveAxis} -> ì›”ë“œë°©í–¥:{worldDirection} | ì‹¤ì œì†ë„:{rodRigidbody.linearVelocity}");
         }
     }
 
-    void OnDisable()
-    {
-        // ¿ÀºêÁ§Æ®°¡ ºñÈ°¼ºÈ­µÉ ¶§ ±¸µ¶ ÇØÁ¦ (¸Ş¸ğ¸® ´©¼ö ¹× ¿¡·¯ ¹æÁö)
-        if (targetSensor != null)
-        {
-            targetSensor.OnDetected.RemoveListener(PushCylinder);
-        }
-    }
-
-    public void PushCylinder()
-    {
-        //Debug.Log($"doPush {animator != null}");
-        if (animator != null)
-        {
-            animator.SetTrigger("doPush");
-            //Debug.Log($"{gameObject.name}: ¼¾¼­ ½ÅÈ£¸¦ ¹Ş¾Æ ÀÛµ¿ÇÕ´Ï´Ù.");
-        }
-    }
 }

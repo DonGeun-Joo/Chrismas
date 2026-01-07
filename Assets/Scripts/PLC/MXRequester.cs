@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class MXRequester : MonoBehaviour
 {
-    // --- [³»ºÎ Å¬·¡½º: ÁÖ¼Òº° ±¸µ¶ÀÚ] ---
+    // --- [ë‚´ë¶€ í´ë˜ìŠ¤: ì£¼ì†Œë³„ êµ¬ë…ì] ---
     [Serializable]
     public class DeviceSubscriber
     {
@@ -19,7 +19,7 @@ public class MXRequester : MonoBehaviour
             get => _readValue;
             set
             {
-                if (_readValue == value) return; // °ªÀÌ º¯ÇßÀ» ¶§¸¸ ½ÇÇà (±ôºıÀÓ ¹æÁö)
+                if (_readValue == value) return; // ê°’ì´ ë³€í–ˆì„ ë•Œë§Œ ì‹¤í–‰ (ê¹œë¹¡ì„ ë°©ì§€)
                 _readValue = value;
                 callbacks?.Invoke(value);
             }
@@ -27,29 +27,34 @@ public class MXRequester : MonoBehaviour
         public DeviceSubscriber(string address) => this.address = address;
     }
 
-    // --- [½Ì±ÛÅæ ¹× ÇÊµå] ---
+    // --- [ì‹±ê¸€í†¤ ë° í•„ë“œ] ---
     private static MXRequester _instance;
     public static MXRequester Get => _instance;
 
     private MXInterface _mxComponent;
 
-    // ºñµ¿±â Å¥ (¿£Áø -> À¯´ÏÆ¼ ¸ŞÀÎ ½º·¹µå Àü´Ş¿ë)
+    // ë¹„ë™ê¸° í (ì—”ì§„ -> ìœ ë‹ˆí‹° ë©”ì¸ ìŠ¤ë ˆë“œ ì „ë‹¬ìš©)
     private readonly ConcurrentQueue<MXInterface.GetDeviceRequest> _getResQueue = new();
     private readonly ConcurrentQueue<MXInterface.SetDeviceRequest> _setResQueue = new();
     private readonly ConcurrentQueue<MXInterface.ReadDeviceRequest> _readResQueue = new();
 
     private readonly Dictionary<string, DeviceSubscriber> _subscribers = new();
+
+    // â­ ì¤‘ìš”: ì£¼ì†Œê°€ ì¶”ê°€ëœ ìˆœì„œë¥¼ ì €ì¥í•˜ëŠ” ë¦¬ìŠ¤íŠ¸ (ì¸ë±ìŠ¤ ë§¤ì¹­ìš©)
+    private readonly List<string> _addressOrder = new List<string>();
+
     private bool _isListChanged = false;
     private bool _isDataUpdated = false;
 
     [Header("PLC Settings")]
-    [SerializeField] private int _interval = 100;    // Åë½Å °£°İ (ms)
-    [SerializeField] private int _stationNumber = 1; // MX Component ½ºÅ×ÀÌ¼Ç ¹øÈ£
+    [SerializeField] private int _interval = 100;    // í†µì‹  ê°„ê²© (ms)
+    [SerializeField] private int _stationNumber = 1; // MX Component ìŠ¤í…Œì´ì…˜ ë²ˆí˜¸
     [SerializeField] private bool _autoConnect = true;
 
     private void Awake()
     {
         _instance = this;
+        // 100ì€ ì´ˆê¸° ìš©ëŸ‰(Capacity)ì…ë‹ˆë‹¤.
         _mxComponent = new MXInterface(_interval, 100, _stationNumber);
         if (_autoConnect) Open();
     }
@@ -57,7 +62,7 @@ public class MXRequester : MonoBehaviour
     public void Open() => _mxComponent.Open();
     public void Close() => _mxComponent.Close();
 
-    // ÁÖ¼Ò °¨½Ã µî·Ï (·¥ÇÁ/¼¾¼­ µî¿¡¼­ È£Ãâ)
+    // ì£¼ì†Œ ê°ì‹œ ë“±ë¡ (ë¨í”„/ì„¼ì„œ/IO_Manager ë“±ì—ì„œ í˜¸ì¶œ)
     public void AddDeviceAddress(string address, Action<short> callback)
     {
         if (string.IsNullOrEmpty(address)) return;
@@ -67,50 +72,93 @@ public class MXRequester : MonoBehaviour
         {
             sub = new DeviceSubscriber(address);
             _subscribers.Add(address, sub);
+
+            // â­ ì¤‘ìš”: ìƒˆë¡œìš´ ì£¼ì†Œê°€ ë“¤ì–´ì˜¤ë©´ ë¦¬ìŠ¤íŠ¸ ëì— ì¶”ê°€í•˜ì—¬ ìˆœì„œë¥¼ ë³´ì¥í•¨
+            _addressOrder.Add(address);
             _isListChanged = true;
         }
 
         if (callback != null)
         {
             sub.callbacks += callback;
-            callback(sub.ReadValue); // ÇöÀç °ª Áï½Ã ¾Ë·ÁÁÖ±â
+            callback(sub.ReadValue); // í˜„ì¬ ê°’ ì¦‰ì‹œ ì•Œë ¤ì£¼ê¸°
         }
     }
 
-    // --- [Åë½Å ¿£Áø¿¡¼­ È£ÃâÇÏ´Â Äİ¹é ÇÔ¼öµé] ---
+    // ì£¼ì†Œì—ì„œ ë¬¸ì(X, Y)ì™€ ìˆ«ì(16ì§„ìˆ˜)ë¥¼ ë¶„ë¦¬í•˜ì—¬ ì •ë ¬ ìˆœì„œë¥¼ ê²°ì •í•˜ëŠ” í•¨ìˆ˜
+    private int ComparePLCAddresses(string a, string b)
+    {
+        // 1. ì ‘ë‘ì–´(X, Y, M ë“±) ë¶„ë¦¬
+        char typeA = a[0];
+        char typeB = b[0];
+
+        // 2. ì ‘ë‘ì–´ê°€ ë‹¤ë¥´ë©´ X -> Y -> M ìˆœì„œë¡œ ì •ë ¬ (ì›í•˜ì‹œëŠ” ìˆœì„œëŒ€ë¡œ ì¡°ì • ê°€ëŠ¥)
+        if (typeA != typeB)
+        {
+            return typeA.CompareTo(typeB);
+        }
+
+        // 3. ì ‘ë‘ì–´ê°€ ê°™ë‹¤ë©´ ë’¤ì˜ 16ì§„ìˆ˜ ìˆ«ìë¥¼ ì¶”ì¶œí•˜ì—¬ ì •ìˆ˜ë¡œ ë³€í™˜ í›„ ë¹„êµ
+        try
+        {
+            int valA = Convert.ToInt32(a.Substring(1), 16);
+            int valB = Convert.ToInt32(b.Substring(1), 16);
+            return valA.CompareTo(valB);
+        }
+        catch
+        {
+            return a.CompareTo(b); // ë³€í™˜ ì‹¤íŒ¨ ì‹œ ê¸°ë³¸ ë¬¸ìì—´ ë¹„êµ
+        }
+    }
+
+    // --- [í†µì‹  ì—”ì§„(MXInterface)ì—ì„œ í˜¸ì¶œí•˜ëŠ” ì½œë°± í•¨ìˆ˜ë“¤] ---
     public void OnReceivedGetDevice(MXInterface.GetDeviceRequest res) { _getResQueue.Enqueue(res); _isDataUpdated = true; }
     public void OnReceivedSetDevice(MXInterface.SetDeviceRequest res) { _setResQueue.Enqueue(res); _isDataUpdated = true; }
     public void OnReceiveReadDatas(MXInterface.ReadDeviceRequest res) { _readResQueue.Enqueue(res); _isDataUpdated = true; }
 
     private void Update()
     {
-        // 1. °¨½Ã ÁÖ¼Ò ¸ñ·ÏÀÌ º¯°æµÇ¾ú´Ù¸é ¿£Áø¿¡ Åëº¸
+        // 1. ê°ì‹œ ì£¼ì†Œ ëª©ë¡ì´ ë³€ê²½ë˜ì—ˆë‹¤ë©´ ì •ë ¬ í›„ ì—”ì§„ì— í†µë³´
         if (_isListChanged)
         {
-            var sortedList = _subscribers.Keys.OrderBy(a => a).ToList();
-            _mxComponent.SetAutoReadDevice(sortedList);
+            // â­ í•µì‹¬: ì˜¤ë¸Œì íŠ¸ ìƒì„± ìˆœì„œì™€ ìƒê´€ì—†ì´ PLC ë©”ëª¨ë¦¬ ìˆœì„œ(X0, X1... Y20, Y21...)ëŒ€ë¡œ ì¬ì •ë ¬
+            _addressOrder.Sort(ComparePLCAddresses);
+
+            // ì •ë ¬ëœ ìˆœì„œ ê·¸ëŒ€ë¡œ ì—”ì§„(MXInterface)ì˜ ìš”ì²­ ë¬¸ìì—´ì„ ê°±ì‹ í•¨
+            _mxComponent.SetAutoReadDevice(_addressOrder);
             _isListChanged = false;
+
+            Debug.Log($"<color=yellow>MXRequester: Address list re-sorted. Count: {_addressOrder.Count}</color>");
         }
 
         if (!_isDataUpdated) return;
 
-        // 2. °³º° ÀĞ±â °á°ú ¹è´Ş
-        while (_getResQueue.TryDequeue(out var res)) res.Callback?.Invoke(res.ReadData);
+        // 2. ê°œë³„ ì½ê¸° ê²°ê³¼ ë°°ë‹¬ (GetDevice)
+        while (_getResQueue.TryDequeue(out var res))
+        {
+            res.Callback?.Invoke(res.ReadData);
+        }
 
-        // 3. ÀÏ°ı ÀĞ±â °á°ú ¹è´Ş (°¡Àå Áß¿ä)
+        // 3. ì¼ê´„ ì½ê¸° ê²°ê³¼ ë°°ë‹¬ (ì •ë ¬ëœ _addressOrderì™€ PLC ê²°ê³¼ ë°°ì—´ì„ ë§¤ì¹­)
         while (_readResQueue.TryDequeue(out var res))
         {
-            // Dictionary Å° Á¤·Ä ¼ø¼­¿Í res.ReadDatasÀÇ ÀÎµ¦½º ¼ø¼­°¡ ÀÏÄ¡ÇÔ
-            var sortedKeys = _subscribers.Keys.OrderBy(a => a).ToList();
-            for (int i = 0; i < sortedKeys.Count; i++)
+            // ì´ì œ _addressOrderëŠ” í•­ìƒ X0, X1, X2... ìˆœì„œë¡œ ì •ë ¬ë˜ì–´ ìˆìœ¼ë¯€ë¡œ
+            // PLCì—ì„œ ìˆœì„œëŒ€ë¡œ ë³´ë‚´ì¤€ res.ReadDatasì™€ ì¸ë±ìŠ¤ê°€ 100% ì¼ì¹˜í•©ë‹ˆë‹¤.
+            for (int i = 0; i < _addressOrder.Count; i++)
             {
                 if (i < res.ReadDatas.Length)
-                    _subscribers[sortedKeys[i]].ReadValue = res.ReadDatas[i];
+                {
+                    string targetAddr = _addressOrder[i];
+                    _subscribers[targetAddr].ReadValue = res.ReadDatas[i];
+                }
             }
         }
 
-        // 4. ¾²±â ¿äÃ» °á°ú ¹è´Ş
-        while (_setResQueue.TryDequeue(out var res)) res.Callback?.Invoke(res.IsSuccess);
+        // 4. ì“°ê¸° ìš”ì²­ ê²°ê³¼ ë°°ë‹¬ (SetDevice)
+        while (_setResQueue.TryDequeue(out var res))
+        {
+            res.Callback?.Invoke(res.IsSuccess);
+        }
 
         _isDataUpdated = false;
     }
