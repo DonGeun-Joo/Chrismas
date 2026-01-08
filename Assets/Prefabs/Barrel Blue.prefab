@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4453934304155697231}
   - component: {fileID: 6040374953904285625}
   - component: {fileID: 3189310596465060393}
+  - component: {fileID: 8132531372052094585}
   m_Layer: 0
   m_Name: Barrel Blue
   m_TagString: Untagged
@@ -138,3 +139,15 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 48
   m_CollisionDetection: 0
+--- !u!114 &8132531372052094585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8178426747239489385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d445b7f7208a6834bb8af8d88bdadadd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

@@ -9,10 +9,12 @@ public class PlayerInteraction : MonoBehaviour
     private Transform _camTransform;
     private bool _isHoldingInteract = false;
     private Push_Button _currentButton;
+    private PlayerMove _playerMove; // PlayerMove 참조용
 
     void Start()
     {
         _camTransform = Camera.main.transform;
+        _playerMove = GetComponent<PlayerMove>(); // PlayerMove 컴포넌트 가져오기
     }
 
     // ⭐ 수정 포인트 1: 즉시 실행 및 상태 업데이트
@@ -43,7 +45,19 @@ public class PlayerInteraction : MonoBehaviour
 
     void CheckButtonUnderCrosshair()
     {
-        Ray ray = new Ray(_camTransform.position, _camTransform.forward);
+        Ray ray;
+
+        // ⭐ 수정 포인트: 커서 모드에 따라 레이 생성 방식 변경
+        if (_playerMove != null && _playerMove.IsCursorMode)
+        {
+            // 마우스 위치에서 레이를 발사 (화면 클릭 대응)
+            ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+        }
+        else
+        {
+            // 화면 중앙(크로스헤어)에서 레이를 발사
+            ray = new Ray(_camTransform.position, _camTransform.forward);
+        }
         RaycastHit hit;
 
         if (Physics.Raycast(ray, out hit, interactDistance, interactLayer))

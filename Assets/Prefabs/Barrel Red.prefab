@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2615938207921367057}
   - component: {fileID: 4246790533173772277}
   - component: {fileID: 340999796099338212}
+  - component: {fileID: 8026436348693426905}
   m_Layer: 0
   m_Name: Barrel Red
   m_TagString: Untagged
@@ -30,8 +31,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: -0.5767379, y: 0.039412536, z: -1.9054784}
-  m_LocalScale: {x: 14, y: 14, z: 14}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 14, y: 14, z: 14.4}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
@@ -107,8 +108,8 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.0031
-  m_Height: 0.0094
+  m_Radius: 0.0028
+  m_Height: 0.0088
   m_Direction: 2
   m_Center: {x: 2.3283063e-10, y: -9.313224e-10, z: 0.0043338565}
 --- !u!54 &340999796099338212
@@ -138,3 +139,15 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 48
   m_CollisionDetection: 0
+--- !u!114 &8026436348693426905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598108786556159706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d445b7f7208a6834bb8af8d88bdadadd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

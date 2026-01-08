@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4275537934240947289}
   - component: {fileID: 5579720454902656542}
   - component: {fileID: 8731482982390693802}
+  - component: {fileID: 4795480905053499071}
   m_Layer: 0
   m_Name: Barrel Wood
   m_TagString: Untagged
@@ -30,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: -0.09026611, y: 0.044579767, z: -1.9957888}
-  m_LocalScale: {x: 12, y: 12, z: 13.5}
+  m_LocalScale: {x: 12, y: 12, z: 13.7}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -107,7 +108,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.0031
+  m_Radius: 0.0037
   m_Height: 0.0094
   m_Direction: 2
   m_Center: {x: -0.000000012572855, y: 0.00000001303852, z: 0.0045841164}
@@ -138,3 +139,15 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 48
   m_CollisionDetection: 0
+--- !u!114 &4795480905053499071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7731246763022231962}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d445b7f7208a6834bb8af8d88bdadadd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

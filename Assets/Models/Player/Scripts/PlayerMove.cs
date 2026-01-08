@@ -1,17 +1,23 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Cinemachine;
 
 public class PlayerMove : MonoBehaviour
 {
-    [Header("ÀÌµ¿ ¼³Á¤")]
+    [Header("ì´ë™ ì„¤ì •")]
     public float moveSpeed = 1.0f;
     public float gravity = -9.81f;
 
+    [Header("Cinemachine 3.x ì„¤ì •")]
+    public CinemachineInputAxisController inputController;
+
     private CharacterController controller;
     private Animator animator;
-    private Vector2 moveInput;
+    private Vector2 moveInput; // â­ ì´ ê°’ì„ ì—…ë°ì´íŠ¸í•˜ëŠ” OnMoveê°€ í•„ìš”í•©ë‹ˆë‹¤.
     private Vector3 velocity;
     private Transform mainCamTransform;
+    private bool isCursorMode = false;
+    public bool IsCursorMode => isCursorMode;
 
     void Start()
     {
@@ -19,13 +25,41 @@ public class PlayerMove : MonoBehaviour
         animator = GetComponentInChildren<Animator>();
         mainCamTransform = Camera.main.transform;
 
-        // ¸¶¿ì½º Ä¿¼­ ¼û±â±â ¹× Áß¾Ó °íÁ¤
-        Cursor.lockState = CursorLockMode.Locked;
+        if (inputController == null)
+            inputController = GameObject.FindAnyObjectByType<CinemachineInputAxisController>();
+
+        UpdateCursorState();
     }
 
+    // â­ [ì¶”ê°€] í‚¤ë³´ë“œ WASD ì…ë ¥ì„ ë°›ëŠ” ë©”ì„œë“œ
     private void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
+    }
+
+    private void OnToggleCursor(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            isCursorMode = !isCursorMode;
+            UpdateCursorState();
+        }
+    }
+
+    private void UpdateCursorState()
+    {
+        if (isCursorMode)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            if (inputController != null) inputController.enabled = false;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            if (inputController != null) inputController.enabled = true;
+        }
     }
 
     void Update()
@@ -36,32 +70,25 @@ public class PlayerMove : MonoBehaviour
 
     void Move()
     {
-        // [ÇÙ½É Ãß°¡] Ä³¸¯ÅÍÀÇ È¸ÀüÀ» Ä«¸Ş¶óÀÇ ÁÂ¿ì È¸Àü°ª°ú ÀÏÄ¡½ÃÅµ´Ï´Ù.
-        // mainCamTransform.eulerAngles.y´Â Ä«¸Ş¶ó°¡ ¹Ù¶óº¸´Â ¼öÆò ¹æÇâ °¢µµÀÔ´Ï´Ù.
-        transform.rotation = Quaternion.Euler(0, mainCamTransform.eulerAngles.y, 0);
+        // ì»¤ì„œ ëª¨ë“œê°€ ì•„ë‹ ë•Œë§Œ ì¹´ë©”ë¼ ë°©í–¥ìœ¼ë¡œ ìºë¦­í„° íšŒì „
+        if (!isCursorMode)
+        {
+            transform.rotation = Quaternion.Euler(0, mainCamTransform.eulerAngles.y, 0);
+        }
 
-        // 1. Ä«¸Ş¶óÀÇ ¹æÇâÀ» °¡Á®¿ÀµÇ, À§¾Æ·¡ ¼ººĞ(Y)Àº ¹«½ÃÇÕ´Ï´Ù
         Vector3 forward = mainCamTransform.forward;
         Vector3 right = mainCamTransform.right;
-
         forward.y = 0f;
         right.y = 0f;
-
         forward.Normalize();
         right.Normalize();
 
-        // 2. ½ÇÁ¦ ÀÌµ¿ ¹æÇâ °è»ê
+        // moveInput ê°’ì´ 0ì´ë©´ moveDirectionë„ 0ì´ ë˜ì–´ ì›€ì§ì´ì§€ ì•ŠìŠµë‹ˆë‹¤.
         Vector3 moveDirection = (forward * moveInput.y + right * moveInput.x).normalized;
-
-        // 3. Ä³¸¯ÅÍ ÄÁÆ®·Ñ·¯·Î ÀÌµ¿ ½ÇÇà
         controller.Move(moveDirection * moveSpeed * Time.deltaTime);
 
-        // 4. Áß·Â Ã³¸® (¶¥¿¡ ºÙ¾îÀÖ°Ô ÇÔ)
-        if (controller.isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
-
+        // ì¤‘ë ¥ ì²˜ë¦¬
+        if (controller.isGrounded && velocity.y < 0) velocity.y = -2f;
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
     }
@@ -70,6 +97,7 @@ public class PlayerMove : MonoBehaviour
     {
         if (animator != null)
         {
+            // moveInputì˜ í¬ê¸°ë¥¼ ì‚¬ìš©í•˜ì—¬ ì• ë‹ˆë©”ì´ì…˜ ì†ë„ ì¡°ì ˆ
             float speed = moveInput.magnitude;
             animator.SetFloat("Speed", speed);
         }
