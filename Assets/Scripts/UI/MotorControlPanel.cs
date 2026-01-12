@@ -1,33 +1,62 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System;
-using TMPro; // TextMeshPro 사용을 위해 필수
+using System.Collections.Generic;
+using TMPro;
 
 public class MotorControlPanel : MonoBehaviour
 {
+    [Serializable]
+    public class PresetPosition
+    {
+        public string label;
+        public double position;
+        public double velocity;
+    }
+
+    [Header("PLC Address Settings")]
+    public string commandAddress = "D128";  // 명령 수신 (1~4)
+    public string statusAddress = "D129";   // 상태 전송 (이동중: 1, 정지: 0)
+                                            // 만약 X 주소를 쓰고 싶다면 "X20" 등으로 변경 가능합니다.
+
+    [Header("Preset Positions")]
+    public List<PresetPosition> presetList = new List<PresetPosition>();
+
     [Header("Axis Settings")]
     public int axisNo = 0;
     public double defaultAcc = 20000;
     public double defaultDec = 20000;
 
     [Header("Input Fields (TMP)")]
-    public TMP_InputField inputTargetPos;  // 목표 위치
-    public TMP_InputField inputTargetVel;  // 이동 속도
-    public TMP_InputField inputAcc;  // 이동 속도
-    public TMP_InputField inputDec;  // 이동 속도
+    public TMP_InputField inputTargetPos;
+    public TMP_InputField inputTargetVel;
+    public TMP_InputField inputAcc;
+    public TMP_InputField inputDec;
 
     [Header("Display Text (TMP)")]
-    public TextMeshProUGUI txtActualPos;   // 현재 위치 표시
+    public TextMeshProUGUI txtActualPos;
+
+    private short _lastCommandValue = -1;
+    private bool _isCurrentlyMoving = false; // 현재 이동 상태 저장
 
     private void Start()
     {
         inputAcc.text = defaultAcc.ToString();
         inputDec.text = defaultDec.ToString();
+
+        if (presetList.Count == 0)
+        {
+            for (int i = 0; i < 4; i++) presetList.Add(new PresetPosition { label = $"Position {i + 1}" });
+        }
     }
+
     void Update()
     {
-        if (AjinextekManager.Instance == null) return;
-        UpdateStatus();
+        if (AjinextekManager.Instance == null || IO_Manager.Instance == null) return;
+
+        UpdateStatus();      // 1. 화면 UI 갱신 (현재 위치)
+        CheckPlcTrigger();   // 2. PLC 명령 확인 (D128)
+        UpdateMovingStatus(); // 3. 모터 이동 상태 확인 및 PLC 보고 (D129)
     }
 
     private void UpdateStatus()
@@ -37,65 +66,70 @@ public class MotorControlPanel : MonoBehaviour
         txtActualPos.text = curPos.ToString("F3");
     }
 
-    // --- [버튼 연결용 함수] ---
+    // --- [PLC 명령 감시: D128] ---
+    private void CheckPlcTrigger()
+    {
+        short currentVal = IO_Manager.Instance.GetRegister(commandAddress);
 
-    // 1. 절대위치 이동 버튼 (Absolute Move)
+        if (currentVal != _lastCommandValue)
+        {
+            if (currentVal >= 1 && currentVal <= presetList.Count)
+            {
+                ExecutePresetMove(currentVal - 1);
+            }
+            _lastCommandValue = currentVal;
+        }
+    }
+
+    // --- [모터 상태 보고: D129] ---
+    private void UpdateMovingStatus()
+    {
+        // AxmStatusReadStatus: 축의 상태를 읽어옴
+        uint uStatus = CAXM.AxmInfoGetAxisStatus(axisNo); ;
+
+        // 0번 비트가 1이면 모터가 현재 구동 중(Busy)임을 의미함
+        bool isMoving = (uStatus & 0x01) != 0;
+
+        // 상태가 변경되었을 때만 PLC에 데이터 전송 (통신 부하 감소)
+        if (isMoving != _isCurrentlyMoving)
+        {
+            _isCurrentlyMoving = isMoving;
+            short statusVal = (short)(isMoving ? 1 : 0);
+
+            // D129에 상태 기록
+            IO_Manager.Instance.SetRegister(statusAddress, statusVal);
+
+            // 만약 X 주소를 사용하고 싶다면 아래 주석을 해제하세요.
+            // IO_Manager.Instance.SetOutput("X20", isMoving);
+
+            Debug.Log($"[Motor Status] {axisNo}번 축 이동 상태 변경: {isMoving} (PLC {statusAddress}에 {statusVal} 기록)");
+        }
+    }
+
+    private void ExecutePresetMove(int index)
+    {
+        PresetPosition target = presetList[index];
+        double acc = Convert.ToDouble(inputAcc.text);
+        double dec = Convert.ToDouble(inputDec.text);
+
+        uint ret = CAXM.AxmMoveStartPos(axisNo, target.position, target.velocity, acc, dec);
+        if (ret != 0) Debug.LogError($"프리셋 이동 실패: {ret}");
+    }
+
+    // --- [UI 버튼용 함수들] ---
     public void OnClickAbsMove()
     {
-        if (AjinextekManager.Instance == null) return;
-
-        // 입력창이 비어있는지 확인 (방어 코드)
-        if (string.IsNullOrEmpty(inputTargetPos.text) || string.IsNullOrEmpty(inputTargetVel.text))
-        {
-            Debug.LogWarning("목표 위치와 속도를 모두 입력해주세요.");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(inputAcc.text) || string.IsNullOrEmpty(inputDec.text))
-        {
-            Debug.LogWarning("가속도와 감속도를 모두 입력해주세요.");
-            return;
-        }
-
         try
         {
-            // 문자열을 숫자로 변환
             double pos = Convert.ToDouble(inputTargetPos.text);
             double vel = Convert.ToDouble(inputTargetVel.text);
             double acc = Convert.ToDouble(inputAcc.text);
             double dec = Convert.ToDouble(inputDec.text);
-
-            // 아진 API 호출: 지정된 절대 좌표로 이동 시작
-            uint ret = CAXM.AxmMoveStartPos(axisNo, pos, vel, acc, dec);
-
-            if (ret != 0) Debug.LogError($"절대이동 시작 실패: {ret}");
+            CAXM.AxmMoveStartPos(axisNo, pos, vel, acc, dec);
         }
-        catch (Exception e)
-        {
-            Debug.LogError($"입력값 형식이 잘못되었습니다: {e.Message}");
-        }
+        catch (Exception e) { Debug.LogError($"입력값 오류: {e.Message}"); }
     }
 
-    // 2. 스탑 버튼 (Stop - 감속 정지)
-    public void OnClickStop()
-    {
-        if (AjinextekManager.Instance == null) return;
-
-        // AxmMoveSStop: 현재 설정된 감속도(Deceleration)를 사용하여 부드럽게 정지
-        uint ret = CAXM.AxmHomeSetResult(axisNo, 0); // 홈 복귀 중이었다면 결과 리셋
-        ret = CAXM.AxmMoveSStop(axisNo);
-
-        if (ret == 0) Debug.Log($"축 {axisNo}: 감속 정지 명령 전송");
-        else Debug.LogError($"정지 명령 실패: {ret}");
-    }
-
-    // 3. 비상 정지 버튼 (Emergency Stop - 즉시 정지)
-    // 필요하시다면 별도의 빨간 버튼에 연결해서 사용하세요.
-    public void OnClickEStop()
-    {
-        if (AjinextekManager.Instance == null) return;
-
-        uint ret = CAXM.AxmMoveEStop(axisNo); // 즉시 정지
-        Debug.LogWarning($"축 {axisNo}: 비상 정지(E-STOP) 실행!");
-    }
+    public void OnClickStop() { CAXM.AxmMoveSStop(axisNo); }
+    public void OnClickEStop() { CAXM.AxmMoveEStop(axisNo); }
 }

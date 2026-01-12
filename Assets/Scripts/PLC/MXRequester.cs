@@ -88,26 +88,23 @@ public class MXRequester : MonoBehaviour
     // 주소에서 문자(X, Y)와 숫자(16진수)를 분리하여 정렬 순서를 결정하는 함수
     private int ComparePLCAddresses(string a, string b)
     {
-        // 1. 접두어(X, Y, M 등) 분리
         char typeA = a[0];
         char typeB = b[0];
 
-        // 2. 접두어가 다르면 X -> Y -> M 순서로 정렬 (원하시는 순서대로 조정 가능)
-        if (typeA != typeB)
-        {
-            return typeA.CompareTo(typeB);
-        }
+        if (typeA != typeB) return typeA.CompareTo(typeB);
 
-        // 3. 접두어가 같다면 뒤의 16진수 숫자를 추출하여 정수로 변환 후 비교
+        // 접두어에 따라 진수 변환을 다르게 해야 함
+        int baseNum = (typeA == 'X' || typeA == 'Y') ? 16 : 10;
+
         try
         {
-            int valA = Convert.ToInt32(a.Substring(1), 16);
-            int valB = Convert.ToInt32(b.Substring(1), 16);
+            int valA = Convert.ToInt32(a.Substring(1), baseNum);
+            int valB = Convert.ToInt32(b.Substring(1), baseNum);
             return valA.CompareTo(valB);
         }
         catch
         {
-            return a.CompareTo(b); // 변환 실패 시 기본 문자열 비교
+            return a.CompareTo(b);
         }
     }
 

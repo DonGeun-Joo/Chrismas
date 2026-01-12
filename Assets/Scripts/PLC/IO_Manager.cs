@@ -15,7 +15,7 @@ public class IO_Manager : MonoBehaviour
 
     [Header("Queue Monitoring Settings")]
     [SerializeField]
-    private string[] _extraDAddresses = { "D128",
+    private string[] _extraDAddresses = { "M15","D128",
         "D1000", "D1001", "D1002", "D1003", "D1004",
         "D3000", "D3001", "D3002", "D3003", "D3004" };
 
@@ -62,8 +62,6 @@ public class IO_Manager : MonoBehaviour
         string upperAddr = addr.ToUpper();
         _ioMirror[upperAddr] = 0;
 
-        // MXRequester에 감시 등록: 값이 변할 때마다 _ioMirror 업데이트
-        // MXRequester가 Word(D) 주소도 지원한다고 가정합니다.
         MXRequester.Get.AddDeviceAddress(upperAddr, (val) => {
             _ioMirror[upperAddr] = val;
         });

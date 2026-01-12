@@ -7280,6 +7280,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe6d70751dcd82b49938342ce973af6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  commandAddress: D128
+  statusAddress: D129
+  presetList:
+  - label: CV_Blur
+    position: 0
+    velocity: 50000
+  - label: CV_Red
+    position: 25000
+    velocity: 50000
+  - label: CV_Can
+    position: 30000
+    velocity: 50000
+  - label: CV_Wood
+    position: 50000
+    velocity: 50000
   axisNo: 0
   defaultAcc: 20000
   defaultDec: 20000
@@ -30937,6 +30952,72 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1598039878}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1600789927
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1600789928}
+  - component: {fileID: 1600789930}
+  - component: {fileID: 1600789929}
+  m_Layer: 0
+  m_Name: YLocker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1600789928
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600789927}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.271, z: -3.622}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1761097352}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1600789929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600789927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c40dd438fd938dd4ca949812cb180718, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!65 &1600789930
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600789927}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 0.22, z: 0.1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1602425021
 GameObject:
   m_ObjectHideFlags: 0
@@ -35305,6 +35386,7 @@ Transform:
   - {fileID: 1110225260}
   - {fileID: 631154842}
   - {fileID: 8438377615909427827}
+  - {fileID: 1600789928}
   m_Father: {fileID: 340261822}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1762923375
@@ -45869,6 +45951,8 @@ GameObject:
   m_Component:
   - component: {fileID: 5236099811099666792}
   - component: {fileID: 5236099811099666793}
+  - component: {fileID: 5236099811099666794}
+  - component: {fileID: 5236099811099666795}
   m_Layer: 0
   m_Name: UR ControlBox
   m_TagString: Untagged
@@ -48913,6 +48997,36 @@ MonoBehaviour:
   wrist1Offset: {x: 0, y: 0, z: 0}
   wrist2Offset: {x: 0, y: 0, z: 90}
   wrist3Offset: {x: 0, y: 0, z: 0}
+--- !u!114 &5236099811099666794
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2369695860839712151}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac7f43e2402b5bf47bf96e5be50a3b1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  urIpAddress: 192.168.10.227
+  port: 502
+  urDO0_Address: 16
+  working_CV: 128
+  canMoving: 129
+--- !u!114 &5236099811099666795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2369695860839712151}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abbfd8d2e8d5ece4fa03766678ab002d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  plcAddress: x1a
 --- !u!4 &5256077082126382284
 Transform:
   m_ObjectHideFlags: 0
