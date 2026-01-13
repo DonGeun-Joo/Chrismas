@@ -15,9 +15,9 @@ public class IO_Manager : MonoBehaviour
 
     [Header("Queue Monitoring Settings")]
     [SerializeField]
-    private string[] _extraDAddresses = { "M15","D128",
-        "D1000", "D1001", "D1002", "D1003", "D1004",
-        "D3000", "D3001", "D3002", "D3003", "D3004" };
+    private string[] _extraDAddresses = { "D128",
+        "D1000", "D1001", "D1002", "D1003", "D1004","D1005",
+        "D3000", "D3001", "D3002", "D3003", "D3004","D3005" };
 
     // PLC 상태 미러링 (X, Y, D 주소 통합 관리)
     private readonly Dictionary<string, short> _ioMirror = new Dictionary<string, short>();

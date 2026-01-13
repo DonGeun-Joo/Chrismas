@@ -16,6 +16,11 @@ public class ReleaseRotation : MonoBehaviour
         {
             UnfreezeRotation();
         }
+
+        if (other.CompareTag("FreezeRotation"))
+        {
+            FreezeRotation();
+        }
     }
 
     private void UnfreezeRotation()
@@ -27,6 +32,14 @@ public class ReleaseRotation : MonoBehaviour
             _rb.constraints &= ~RigidbodyConstraints.FreezeRotation;
 
             //Debug.Log($"{gameObject.name}: 회전 고정이 해제되었습니다.");
+        }
+    }
+
+    private void FreezeRotation()
+    {
+        if (_rb != null)
+        {
+            _rb.constraints |= RigidbodyConstraints.FreezeRotation;
         }
     }
 }
