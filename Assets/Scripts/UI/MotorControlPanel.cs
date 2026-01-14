@@ -11,7 +11,7 @@ public class MotorControlPanel : MonoBehaviour
     {
         public string label;
         public double position;
-        public double velocity;
+        public double velocity = 100000;
     }
 
     [Header("PLC Address Settings")]
@@ -24,8 +24,9 @@ public class MotorControlPanel : MonoBehaviour
 
     [Header("Axis Settings")]
     public int axisNo = 0;
-    public double defaultAcc = 20000;
-    public double defaultDec = 20000;
+    public double defaultAcc = 100000;
+    public double defaultDec = 100000;
+    public double defaultSpeed = 200000;
 
     [Header("Input Fields (TMP)")]
     public TMP_InputField inputTargetPos;
@@ -38,11 +39,13 @@ public class MotorControlPanel : MonoBehaviour
 
     private short _lastCommandValue = -1;
     private bool _isCurrentlyMoving = false; // 현재 이동 상태 저장
+    private short _moterStatus = -1;
 
     private void Start()
     {
         inputAcc.text = defaultAcc.ToString();
         inputDec.text = defaultDec.ToString();
+        inputTargetVel.text = defaultSpeed.ToString();
 
         if (presetList.Count == 0)
         {
@@ -70,39 +73,55 @@ public class MotorControlPanel : MonoBehaviour
     private void CheckPlcTrigger()
     {
         short currentVal = IO_Manager.Instance.GetRegister(commandAddress);
-
+        //Debug.Log($"{currentVal}");
         if (currentVal != _lastCommandValue)
         {
-            if (currentVal >= 1 && currentVal <= presetList.Count)
+            if (currentVal >= 1 )
             {
-                ExecutePresetMove(currentVal - 1);
+                ExecutePresetMove(currentVal-2);
             }
             _lastCommandValue = currentVal;
         }
     }
 
+    public short GetMotionStatus()
+    {
+        return _moterStatus;
+    }
+
     // --- [모터 상태 보고: D129] ---
     private void UpdateMovingStatus()
     {
-        // AxmStatusReadStatus: 축의 상태를 읽어옴
-        uint uStatus = CAXM.AxmInfoGetAxisStatus(axisNo); ;
+        uint uInMotion = 0;
 
-        // 0번 비트가 1이면 모터가 현재 구동 중(Busy)임을 의미함
-        bool isMoving = (uStatus & 0x01) != 0;
+        // AxmStatusReadInMotion: 축이 이동 중인지 여부를 직접 읽어옴
+        // 반환값(ret): 0이면 성공, 그 외에는 에러
+        // uInMotion: 1이면 이동 중(Busy), 0이면 정지 상태
+        uint ret = CAXM.AxmStatusReadInMotion(axisNo, ref uInMotion);
+
+        if (ret != 0)
+        {
+            // API 호출 실패 시 로그 출력 (필요 시 주석 해제)
+            // Debug.LogError($"AxmStatusReadInMotion 에러: {ret}");
+            return;
+        }
+
+        bool isMoving = (uInMotion == 1);
 
         // 상태가 변경되었을 때만 PLC에 데이터 전송 (통신 부하 감소)
         if (isMoving != _isCurrentlyMoving)
         {
             _isCurrentlyMoving = isMoving;
-            short statusVal = (short)(isMoving ? 1 : 0);
+            _moterStatus = (short)(isMoving ? 1 : 0);
 
             // D129에 상태 기록
-            IO_Manager.Instance.SetRegister(statusAddress, statusVal);
+            if (IO_Manager.Instance != null)
+            {
+                IO_Manager.Instance.SetRegister(statusAddress, _moterStatus);
 
-            // 만약 X 주소를 사용하고 싶다면 아래 주석을 해제하세요.
-            // IO_Manager.Instance.SetOutput("X20", isMoving);
-
-            Debug.Log($"[Motor Status] {axisNo}번 축 이동 상태 변경: {isMoving} (PLC {statusAddress}에 {statusVal} 기록)");
+                // 디버그 로그: 실제 현장에서 상태 변화를 확인하기 위함
+                Debug.Log($"<color=cyan>[Motor Status]</color> {axisNo}번 축 상태 변경 -> {(isMoving ? "이동 중 (1)" : "정지 (0)")}");
+            }
         }
     }
 

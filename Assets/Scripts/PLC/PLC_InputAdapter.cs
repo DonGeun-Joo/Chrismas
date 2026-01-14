@@ -38,6 +38,8 @@ public class PLC_InputAdapter : MonoBehaviour
             // 로봇의 Busy 상태 변화 이벤트를 구독
             robotBridge.OnRobotBusyChanged += (isOn) => SendToManager(isOn);
         }
+
+        
     }
 
     private void SendToManager(bool isOn)

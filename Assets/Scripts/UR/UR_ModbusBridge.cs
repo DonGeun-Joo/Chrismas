@@ -1,6 +1,8 @@
 using UnityEngine;
 using EasyModbus;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 public class UR_ModbusBridge : MonoBehaviour
 {
@@ -9,77 +11,99 @@ public class UR_ModbusBridge : MonoBehaviour
     public int port = 502;
 
     private ModbusClient _modbusClient;
+    private CancellationTokenSource _cts; // 비동기 작업 종료용
 
     [Header("urSim IO Mapping")]
-    public ushort urDO0_Address = 16;   // 로봇의 Digital Output 0번
-    public ushort working_CV = 128; // 로봇의 GP Register (D128 수신용)
+    public ushort urDO0_Address = 16;
+    public ushort working_CV = 128;
     public ushort canMoving = 129;
 
-    // 로봇 상태 변경 시 PLC_InputAdapter가 감지할 수 있도록 이벤트 선언
+    public MotorControlPanel MotorControlPanel;
+
     public event Action<bool> OnRobotBusyChanged;
+
+
+
+    // 스레드 간 공유 변수
+    private bool _currentBusy = false;
+    private bool _grip = false;
     private bool _lastBusyState = false;
+    private short _plcD128 = 0;
+    private short _plcD129 = 0;
+    private bool _isConnected = false;
 
     void Start()
     {
         _modbusClient = new ModbusClient(urIpAddress, port);
-        // 연결 시도 루틴 시작
-        InvokeRepeating(nameof(CheckConnection), 1f, 2f);
-        // 데이터 중계 루프 시작 (0.1초 간격)
-        InvokeRepeating(nameof(BridgeDataLoop), 2f, 0.1f);
+        _modbusClient.ConnectionTimeout = 1000; // 타임아웃 1초로 제한
+
+        _cts = new CancellationTokenSource();
+
+        // 별도 스레드에서 통신 루프 시작
+        Task.Run(() => ModbusCommunicationLoop(_cts.Token));
     }
 
-    void CheckConnection()
+    void Update()
     {
-        if (!_modbusClient.Connected)
+        // 1. PLC 데이터를 메인 스레드에서 미리 읽어둠 (IO_Manager는 메인 스레드 전용일 가능성 높음)
+        if (IO_Manager.Instance != null)
+        {
+            _plcD128 = IO_Manager.Instance.GetRegister("D128");
+            _plcD129 = IO_Manager.Instance.GetRegister("D129");
+        }
+
+        // 2. 통신 스레드에서 가져온 Busy 상태 변화 감지 및 이벤트 발생
+        if (_currentBusy != _lastBusyState)
+        {
+            _lastBusyState = _currentBusy;
+            OnRobotBusyChanged?.Invoke(_currentBusy);
+        }
+    }
+
+    /// <summary>
+    /// 별도 스레드에서 실행되는 통신 루프
+    /// </summary>
+    private async Task ModbusCommunicationLoop(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
         {
             try
             {
-                _modbusClient.Connect();
-                Debug.Log("<color=green>urSim Modbus Connected!</color>");
+                if (!_modbusClient.Connected)
+                {
+                    _isConnected = false;
+                    _modbusClient.Connect();
+                    _isConnected = true;
+                    Debug.Log("<color=green>[urSim] Connected!</color>");
+                }
+
+                if (_modbusClient.Connected)
+                {
+                    // --- 1. 데이터 읽기 ---
+                    bool[] urCoils = _modbusClient.ReadCoils(urDO0_Address, 2);
+                    _currentBusy = urCoils[0];
+                    _grip = urCoils[1];
+
+                    // --- 2. 데이터 쓰기 ---
+                    _modbusClient.WriteSingleRegister(working_CV, _plcD128);
+                    _modbusClient.WriteSingleRegister(canMoving, MotorControlPanel.GetMotionStatus());
+                }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogWarning($"urSim Reconnecting... : {e.Message}");
-            }
-        }
-    }
-
-    void BridgeDataLoop()
-    {
-        if (!_modbusClient.Connected) return;
-
-        try
-        {
-            // --- 1. urSim DO 0번 읽기 (Robot Busy 상태) ---
-            bool[] urCoils = _modbusClient.ReadCoils(urDO0_Address, 1);
-            bool currentBusy = urCoils[0];
-
-            // 상태가 변했을 때만 이벤트를 발생시켜 PLC 통신 부하 감소
-            if (currentBusy != _lastBusyState)
-            {
-                _lastBusyState = currentBusy;
-                OnRobotBusyChanged?.Invoke(currentBusy);
-                //Debug.Log($"[urSim] Robot Busy State Changed: {currentBusy}");
+                _isConnected = false;
+                // 접속 실패 시 로그는 너무 자주 찍히지 않도록 조절하거나 생략
             }
 
-            // --- 2. PLC -> urSim 데이터 전달 (D128 데이터 읽어서 urSim에 쓰기) ---
-            if (IO_Manager.Instance != null)
-            {
-                short plcValue = IO_Manager.Instance.GetRegister("D128");
-                _modbusClient.WriteSingleRegister(working_CV, plcValue);
-
-                plcValue = IO_Manager.Instance.GetRegister("D129");
-                _modbusClient.WriteSingleRegister(canMoving, plcValue);
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"UR Modbus Bridge Error: {e.Message}");
+            // 통신 주기 조절 (0.1초 대기) - Task.Delay는 스레드를 차단하지 않음
+            await Task.Delay(100, token);
         }
     }
 
     void OnDestroy()
     {
+        // 스레드 종료 및 연결 해제
+        _cts?.Cancel();
         if (_modbusClient != null && _modbusClient.Connected)
         {
             _modbusClient.Disconnect();

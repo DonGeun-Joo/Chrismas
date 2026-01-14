@@ -7,6 +7,8 @@ TagManager:
   - Limit
   - Item
   - FreezeRotation
+  - Place
+  - Pick
   layers:
   - Default
   - TransparentFX

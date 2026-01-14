@@ -17,7 +17,7 @@ public class SlotSensor : MonoBehaviour
         {
             OnDetected.Invoke();
             isDetected = true;
-            Debug.Log($" {gameObject.name}: ON");
+            //Debug.Log($" {gameObject.name}: ON");
         }
 
         // 영역 내 물체 수 증가
@@ -34,7 +34,7 @@ public class SlotSensor : MonoBehaviour
         {
             triggerCount = 0; // 마이너스 방지
             isDetected = false;
-            Debug.Log($"{gameObject.name}: OFF");
+            //Debug.Log($"{gameObject.name}: OFF");
         }
     }
 }
