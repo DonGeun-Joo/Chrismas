@@ -6,6 +6,15 @@ using TMPro;
 
 public class MotorControlPanel : MonoBehaviour
 {
+    public enum CV
+    {
+        Blue = 2,
+        Red,
+        Can,
+        Wood
+    }
+
+
     [Serializable]
     public class PresetPosition
     {
@@ -20,7 +29,10 @@ public class MotorControlPanel : MonoBehaviour
                                             // 만약 X 주소를 쓰고 싶다면 "X20" 등으로 변경 가능합니다.
 
     [Header("Preset Positions")]
-    public List<PresetPosition> presetList = new List<PresetPosition>();
+    public PresetPosition bluePosition = new PresetPosition();
+    public PresetPosition redPosition = new PresetPosition();
+    public PresetPosition canPosition = new PresetPosition();
+    public PresetPosition woodPosition = new PresetPosition();
 
     [Header("Axis Settings")]
     public int axisNo = 0;
@@ -37,6 +49,8 @@ public class MotorControlPanel : MonoBehaviour
     [Header("Display Text (TMP)")]
     public TextMeshProUGUI txtActualPos;
 
+    public string robotBusyAddress;
+
     private short _lastCommandValue = -1;
     private bool _isCurrentlyMoving = false; // 현재 이동 상태 저장
     private short _moterStatus = -1;
@@ -47,10 +61,6 @@ public class MotorControlPanel : MonoBehaviour
         inputDec.text = defaultDec.ToString();
         inputTargetVel.text = defaultSpeed.ToString();
 
-        if (presetList.Count == 0)
-        {
-            for (int i = 0; i < 4; i++) presetList.Add(new PresetPosition { label = $"Position {i + 1}" });
-        }
     }
 
     void Update()
@@ -73,15 +83,35 @@ public class MotorControlPanel : MonoBehaviour
     private void CheckPlcTrigger()
     {
         short currentVal = IO_Manager.Instance.GetRegister(commandAddress);
-        //Debug.Log($"{currentVal}");
+
+        // 1. 명령 주소의 값이 변경되었는지 확인
         if (currentVal != _lastCommandValue)
         {
-            if (currentVal >= 1 )
+            if (currentVal >= 1)
             {
-                ExecutePresetMove(currentVal-2);
+                // 2. 인터락 체크 로직 추가
+                if (CheckReadyToMove())
+                {
+                    // 이동 실행 (기존 로직: 1이면 index -1, 2이면 index 0...)
+                    ExecutePresetMove((CV)currentVal);
+                }
+                else
+                {
+                    Debug.LogWarning($"<color=red>[Motor Alert]</color> 명령({currentVal})이 수신되었으나, 인터락 신호({robotBusyAddress})가 꺼져 있어 무시되었습니다.");
+                }
             }
             _lastCommandValue = currentVal;
         }
+    }
+
+    /// <summary>
+    /// 모터가 움직여도 되는 안전 상태인지 확인합니다.
+    /// </summary>
+    private bool CheckReadyToMove()
+    {
+
+        // IO_Manager를 통해 특정 입력 접점(X) 상태 확인
+        return !IO_Manager.Instance.GetBit(robotBusyAddress);
     }
 
     public short GetMotionStatus()
@@ -125,12 +155,31 @@ public class MotorControlPanel : MonoBehaviour
         }
     }
 
-    private void ExecutePresetMove(int index)
+    private void ExecutePresetMove(CV cvNum)
     {
-        PresetPosition target = presetList[index];
+        PresetPosition target = new PresetPosition();
+        switch (cvNum)
+        {
+            case CV.Blue:
+                target = bluePosition;
+                break;
+
+            case CV.Red:
+                target = redPosition;
+                break;
+
+            case CV.Can:
+                target = canPosition;
+                break;
+
+            case CV.Wood:
+                target = woodPosition;
+                break;
+
+        }
         double acc = Convert.ToDouble(inputAcc.text);
         double dec = Convert.ToDouble(inputDec.text);
-
+        _moterStatus = 1;
         uint ret = CAXM.AxmMoveStartPos(axisNo, target.position, target.velocity, acc, dec);
         if (ret != 0) Debug.LogError($"프리셋 이동 실패: {ret}");
     }
